@@ -1,0 +1,57 @@
+name: Workflow for deploying Spark jobs to Fabric
+on:
+  workflow_call:
+    inputs:
+      fabric_workspace:
+        required: true
+        type: string
+      env:
+        required: true
+        type: string
+    secrets:
+      azure_client_id:
+        required: true
+      azure_tenant_id:
+        required: true
+      azure_subscription_id:
+        required: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.env }}
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            src
+          fetch-depth: 0
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.azure_client_id }}
+          tenant-id: ${{ secrets.azure_tenant_id }}
+          subscription-id: ${{ secrets.azure_subscription_id }}
+          allow-no-subscriptions: true
+      - name: Strip python imports for use in Fabric #only needed if there are subfolders/submodules
+        run: |
+          SRC_FILES=$(find src -type f -name "*.py")
+          for file in ${SRC_FILES}; do
+              sed -i 's/from src\.common\./from /g; s/import src\.common\./import /g' "$file"
+          done
+      - name: Upload all files in tag
+        uses: azure/CLI@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            SRC_FILES=$(find src -type f -name "*.py")
+            REPO_NAME=$(echo $GITHUB_REPOSITORY | cut -d "/" -f2-)
+            az storage fs directory delete --blob-endpoint https://onelake.dfs.fabric.microsoft.com/${{ inputs.fabric_workspace }}/your-lakehouse.Lakehouse/Files --auth-mode login -f jobs --name $REPO_NAME -y
+            az storage fs directory create --blob-endpoint https://onelake.dfs.fabric.microsoft.com/${{ inputs.fabric_workspace }}/your-lakehouse.Lakehouse/Files --auth-mode login -f jobs --name $REPO_NAME
+            for file in ${SRC_FILES}; do
+              FILE_PATH=$(echo "$file" | cut -d "/" -f2-)
+              az storage fs file upload --blob-endpoint https://onelake.dfs.fabric.microsoft.com/${{ inputs.fabric_workspace }}/your-lakehouse.Lakehouse/Files --auth-mode login -f jobs --source $file --path $REPO_NAME/$FILE_PATH --overwrite
+            done

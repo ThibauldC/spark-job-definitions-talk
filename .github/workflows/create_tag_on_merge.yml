@@ -1,0 +1,36 @@
+name: Create tag upon merge
+on:
+  workflow_dispatch:
+#  push:
+#    branches:
+#      - main
+#    paths:
+#      - src/**
+#    tags-ignore:
+#      - v*
+permissions:
+    id-token: write
+    contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      actions: "read"
+    steps:
+      - name: Create Github token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ...
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+            fetch-depth: 0
+      - name: Bump version and push tag
+        id: tag_version
+        uses: anothrNick/github-tag-action@1.64.0
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          WITH_V: true
+          DEFAULT_BUMP: patch

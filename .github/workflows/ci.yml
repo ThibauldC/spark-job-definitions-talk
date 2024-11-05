@@ -1,0 +1,26 @@
+name: Build and test
+on:
+  workflow_dispatch:
+#  push:
+#    branches:
+#      - '**'
+#      - '!main'
+#    paths:
+#      - 'src/**'
+#      - 'tests/**'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements_dev.txt
+      - name: Run tests
+        run: SPARK_LOCAL_IP=127.0.0.1 python -m pytest --no-cov-on-fail --cov=src --cov-report=term --cov-fail-under=80 tests
