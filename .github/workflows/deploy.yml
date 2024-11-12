@@ -40,7 +40,7 @@ jobs:
         run: |
           SRC_FILES=$(find src -type f -name "*.py")
           for file in ${SRC_FILES}; do
-              sed -i 's/from src\.common\./from /g; s/import src\.common\./import /g' "$file"
+              sed -i 's/from src\.fabric_local_etl\./from /g; s/import src\.fabric_local_etl\./import /g' "$file"
           done
       - name: Upload all files in tag
         uses: azure/CLI@v2
