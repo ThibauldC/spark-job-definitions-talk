@@ -31,10 +31,10 @@ def employee_table(spark):
         StructField("title", StringType(), False),
     ])
     df = spark.createDataFrame(schema=schema, data=data)
-    spark.sql("CREATE SCHEMA IF NOT EXISTS job_lakehouse")
-    df.write.format("delta").saveAsTable("job_lakehouse.employees")
+    spark.sql("CREATE SCHEMA IF NOT EXISTS fake_schema")
+    df.write.format("delta").saveAsTable("fake_schema.employees")
     yield ""
-    spark.sql("DROP TABLE job_lakehouse.employees")
+    spark.sql("DROP TABLE fake_schema.employees")
 
 
 @pytest.fixture
@@ -52,10 +52,10 @@ def temp_file() -> str:
 
 
 def test_create_silver_table(spark, employee_table, temp_file):
-    assert spark.table("job_lakehouse.employees").count() == 1
+    assert spark.table("fake_schema.employees").count() == 1
     ingest_employees(temp_file, spark)
 
-    employees = spark.table("job_lakehouse.employees").orderBy("id").collect()
+    employees = spark.table("fake_schema.employees").orderBy("id").collect()
 
     assert employees == [
         Row(id=1, name="Michael Scott", title="Regional Manager"),

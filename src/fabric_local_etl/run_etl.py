@@ -4,7 +4,7 @@ def ingest_employees(path: str, spark_session: SparkSession | None = None) -> No
     spark = spark_session or SparkSession.builder.getOrCreate()
     df = spark.read.json(path)
 
-    df.write.format("delta").mode("append").saveAsTable("job_lakehouse.employees")
+    df.write.format("delta").mode("append").saveAsTable("fake_schema.employees")
 
 if __name__ == "__main__":
     ingest_employees("Files/employees.json")
